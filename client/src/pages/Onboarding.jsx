@@ -5,15 +5,15 @@ import VoiceRecorder from "../components/VoiceRecorder.jsx";
 import useVoiceClone from "../hooks/useVoiceClone.js";
 
 export default function Onboarding({ onReady }) {
-  const [recording, setRecording] = React.useState(null);
+  const [recording, setRecording] = React.useState(null); // stores { blob, duration, isValid }
   const [voiceName, setVoiceName] = React.useState("VoiceForge Voice");
   const [successProfile, setSuccessProfile] = React.useState(null);
   const { cloneVoice, status, error } = useVoiceClone();
   const isCloning = status === "cloning";
 
   async function handleClone() {
-    if (!recording) return;
-    const profile = await cloneVoice(recording, voiceName);
+    if (!recording || !recording.isValid) return;
+    const profile = await cloneVoice(recording.blob, voiceName);
     setSuccessProfile(profile);
   }
 
@@ -49,7 +49,10 @@ export default function Onboarding({ onReady }) {
         </div>
       </section>
 
-      <VoiceRecorder onRecordingReady={setRecording} disabled={isCloning} />
+      <VoiceRecorder 
+        onRecordingReady={(blob, meta) => setRecording(blob ? { blob, ...meta } : null)} 
+        disabled={isCloning} 
+      />
 
       <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-soft dark:border-border dark:bg-surface dark:shadow-soft-dk">
         <label
@@ -68,7 +71,7 @@ export default function Onboarding({ onReady }) {
           <button
             type="button"
             onClick={handleClone}
-            disabled={!recording || isCloning}
+            disabled={!recording || !recording.isValid || isCloning}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-coral px-5 font-bold text-white transition hover:bg-coral/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isCloning && (
@@ -77,6 +80,11 @@ export default function Onboarding({ onReady }) {
             Clone voice
           </button>
         </div>
+        {recording && !recording.isValid && (
+          <p className="mt-3 text-sm font-semibold text-coral" role="alert">
+            Please record a voice clip of at least 10 seconds before voice cloning.
+          </p>
+        )}
         {isCloning && (
           <p className="mt-3 text-sm font-semibold text-moss dark:text-glow">
             Cloning in progress. This can take a moment on the free tier.
