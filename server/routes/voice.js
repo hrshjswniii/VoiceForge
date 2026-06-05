@@ -11,8 +11,8 @@ const router = Router();
 // while still allowing reasonable legitimate use.
 const cloneRateLimit = rateLimit({
   windowMs: 5 * 60 * 1000,
-  max: 3,
-  standardHeaders: true,
+  limit: 3,
+  standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { error: "Too many voice clone requests. Please wait before trying again." }
 });
@@ -22,8 +22,8 @@ const cloneRateLimit = rateLimit({
 // automated quota exhaustion.
 const speakRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
-  standardHeaders: true,
+  limit: 20,
+  standardHeaders: "draft-8",
   legacyHeaders: false,
   message: { error: "Too many speech requests. Please slow down." }
 });
