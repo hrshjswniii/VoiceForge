@@ -195,12 +195,12 @@ jobs:
 
             if (!matchedProgram) {
               templateProblems.push(matchedPrograms.length > 1
-                ? 'Please select only one program: GSSoC, NSOC, SSOC, or ELUSOC.'
-                : 'Please select one program template: GSSoC, NSOC, SSOC, or ELUSOC.');
+                ? 'multiple-programs'
+                : 'no-program');
             }
 
             if (!isBugTemplate && !isFeatureTemplate) {
-              templateProblems.push('Please use the mandatory bug report or feature request issue template.');
+              templateProblems.push('no-template');
             }
 
             if (templateProblems.length === 0) {
@@ -212,7 +212,7 @@ jobs:
 
             const cleanedBody = getCleanIssueBody(body);
             if (cleanedBody.length < 160 || hasPlaceholderContent(body)) {
-              qualityProblems.push('Please replace the template placeholder text with enough real detail for maintainers to review this issue.');
+              qualityProblems.push('low-quality');
               labelsToAdd.push('needs-quality');
             }
 
@@ -253,24 +253,44 @@ jobs:
             if (problems.length === 0) {
               const authorCanSelfReview = await issueAuthorCanSelfReview();
               const reviewerMentions = authorCanSelfReview ? [] : getProgramReviewerMentions(matchedProgram.label);
-              const reviewerMentionText = authorCanSelfReview
-                ? `Skipped because @${username} has maintainer permissions`
-                : reviewerMentions.length > 0 ? reviewerMentions.join(' ') : 'No mentor configured for this program yet';
-              const reviewerRequestText = authorCanSelfReview
-                ? `Maintainer-created issue: @${username} can review this directly, so no program mentor ping was sent.\n\n` +
-                  `Maintainer next steps: add priority/difficulty labels, choose a decision label, then assign only when ready.\n\n`
-                : reviewerMentions.length > 0
-                  ? `${reviewerMentionText}, this ${matchedProgram.name} issue is ready for review.\n\n` +
-                  `Mentor next steps: confirm scope, add priority/difficulty if needed, then apply \`go ahead\`, \`duplicate\`, \`not needed\`, or \`out of scope\`.\n\n`
-                  : `No mentor is configured for ${matchedProgram.name} yet, so no mentor ping was sent.\n\n`;
-              const successBody =
-                `${marker}\n` +
-                `${authorCanSelfReview ? '## Maintainer Issue Intake Passed' : '## Issue Ready For Mentor Review'}\n\n` +
-                `Hi @${username}, your ${matchedProgram.name} ${isBugTemplate ? 'bug report' : 'feature request'} passed intake.\n\n` +
-                `${authorCanSelfReview ? 'Labels were applied without a mentor ping because this was opened by a maintainer.' : 'A mentor will review scope, labels, and assignment readiness next.'}\n\n` +
-                reviewerRequestText +
-                `${authorCanSelfReview ? 'Contributors should still wait for maintainer assignment before starting work.' : 'Please wait for mentor confirmation before starting work. Assignment requests are welcome, but work should begin only after a mentor approves and assigns the issue.'}\n\n` +
-                `_VoiceForge automation_`;
+              const issueType = isBugTemplate ? 'bug report' : 'feature request';
+              const appliedLabels = [...new Set(labelsToAdd)]
+                .map(label => `\`${label}\``)
+                .join(' ');
+              let successBody;
+
+              if (authorCanSelfReview) {
+                successBody =
+                  `${marker}\n` +
+                  `> **Intake passed** - maintainer issue\n\n` +
+                  `Hi @${username} - your ${matchedProgram.name} ${issueType} passed validation. No mentor ping was sent because you have write access.\n\n` +
+                  `**Labels applied:** ${appliedLabels}\n\n` +
+                  `**Your next steps**\n` +
+                  `1. Add a \`priority: *\` and \`level: *\` label.\n` +
+                  `2. Apply a decision label: \`go ahead\`, \`duplicate\`, \`not needed\`, or \`out of scope\`.\n` +
+                  `3. Assign only when ready. Contributors should wait for assignment before starting work.\n\n` +
+                  `<sub>VoiceForge Automation · issue-template-validator</sub>`;
+              } else if (reviewerMentions.length > 0) {
+                successBody =
+                  `${marker}\n` +
+                  `> **Intake passed** - waiting for mentor review\n\n` +
+                  `Hi @${username} - your ${matchedProgram.name} ${issueType} looks good.\n\n` +
+                  `**Labels applied:** ${appliedLabels}\n\n` +
+                  `**What happens next**\n` +
+                  `1. A mentor reviews scope and priority.\n` +
+                  `2. They apply \`go ahead\` or close with \`duplicate\`, \`not needed\`, or \`out of scope\`.\n` +
+                  `3. The issue gets assigned. Please start work only after approval and assignment.\n\n` +
+                  `${reviewerMentions.join(' ')} - ${matchedProgram.name} issue ready for your review.\n\n` +
+                  `<sub>VoiceForge Automation · issue-template-validator</sub>`;
+              } else {
+                successBody =
+                  `${marker}\n` +
+                  `> **Intake passed** - no mentor configured yet\n\n` +
+                  `Hi @${username} - your ${matchedProgram.name} ${issueType} looks good.\n\n` +
+                  `**Labels applied:** ${appliedLabels}\n\n` +
+                  `No mentor is configured for ${matchedProgram.name} yet, so a maintainer will review this directly. Please wait for assignment before starting work.\n\n` +
+                  `<sub>VoiceForge Automation · issue-template-validator</sub>`;
+              }
 
               if (existing) {
                 await github.rest.issues.updateComment({
@@ -290,18 +310,31 @@ jobs:
               return;
             }
 
+            const problemLines = [];
+
+            if (templateProblems.includes('multiple-programs')) {
+              problemLines.push('**Multiple programs selected** - keep only one: GSSoC, NSOC, SSOC, or ELUSOC under the Program heading.');
+            } else if (templateProblems.includes('no-program')) {
+              problemLines.push('**No program selected** - add one under the Program heading: GSSoC, NSOC, SSOC, or ELUSOC.');
+            }
+
+            if (templateProblems.includes('no-template')) {
+              problemLines.push('**Template not used** - fill in either the bug report template or the feature request template.');
+            }
+
+            if (qualityProblems.includes('low-quality')) {
+              problemLines.push('**Not enough detail** - replace placeholder text with real context, steps, and expected vs actual behavior.');
+            }
+
+            const problemCount = problemLines.length;
             const commentBody =
               `${marker}\n` +
-              `## Issue Needs A Quick Update\n\n` +
-              `Hi @${username}, thank you for opening this issue.\n\n` +
-              `Please update these items before mentor review:\n\n` +
-              problems.map(problem => `- ${problem}`).join('\n') +
+              `> **${problemCount} thing${problemCount === 1 ? '' : 's'} need${problemCount === 1 ? 's' : ''} fixing** before this can be reviewed\n\n` +
+              `Hi @${username} - quick update needed on the issue body:\n\n` +
+              problemLines.map(line => `- ${line}`).join('\n') +
               `\n\n` +
-              `${templateProblems.length > 0 ? '- Template: use one complete program issue template: GSSoC, NSOC, SSOC, or ELUSOC.\n' : ''}` +
-              `${qualityProblems.length > 0 ? '- Details: replace placeholders with clear context, expected behavior, useful screenshots/logs, and enough steps to review.\n' : ''}` +
-              `\n` +
-              `Edit the issue body with the missing details. This comment will update automatically after the workflow runs again.\n\n` +
-              `_VoiceForge automation_`;
+              `Edit the issue body above. This comment updates automatically after the workflow runs again.\n\n` +
+              `<sub>VoiceForge Automation · issue-template-validator</sub>`;
 
             if (existing) {
               await github.rest.issues.updateComment({
