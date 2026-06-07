@@ -191,11 +191,13 @@ export function QuickReplies({ onSelect }) {
           </form>
         )}
 
-        {replies.length === 0 && !isAdding && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 italic">
-            No quick replies. Click "Customize" to add.
-          </p>
-        )}
+{replies.length === 0 && !isAdding && (
+  <p className="text-xs text-neutral-400 dark:text-neutral-500 italic">
+    {isEditing 
+      ? 'No quick replies. Click "Add" to create one.'
+      : 'No quick replies. Click "Customize" to add.'}
+  </p>
+)}
       </div>
 
       <ToastContainer toasts={toasts} />
