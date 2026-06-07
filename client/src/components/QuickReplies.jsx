@@ -13,6 +13,7 @@ const DEFAULT_QUICK_REPLIES = [
 ];
 
 const STORAGE_KEY = "vf_quick_replies";
+const MAX_REPLIES = 20;
 
 export function QuickReplies({ onSelect }) {
   const [replies, setReplies] = useState(() => {
@@ -45,7 +46,7 @@ export function QuickReplies({ onSelect }) {
       showToast("Could not save changes. Storage may be full.", "error");
 
     }
-  }, [replies]);
+  }, [replies, showToast]);
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -53,6 +54,10 @@ export function QuickReplies({ onSelect }) {
 
     if (!cleanPhrase) {
       showToast("Phrase cannot be empty", "error");
+      return;
+    }
+    if (replies.length >= MAX_REPLIES) {
+      showToast("Maximum of 20 quick replies allowed", "error");
       return;
     }
 
