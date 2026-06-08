@@ -4,7 +4,11 @@ import dotenv from "dotenv";
 import express from "express";
 import voiceRoutes from "./routes/voice.js";
 
-dotenv.config();
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = express();
 const port = process.env.PORT || 3001;
