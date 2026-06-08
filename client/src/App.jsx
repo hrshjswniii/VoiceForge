@@ -6,10 +6,11 @@ import Call from "./pages/Call.jsx";
 import Settings from "./pages/Settings.jsx";
 import VoiceForge from "./components/VoiceForge";
 import { useTheme } from "./components/ThemeContext.jsx";
+import Footer from './components/Footer.jsx';
 
 const tabs = [
   { id: "onboarding", label: "Onboarding", icon: Mic2 },
-  { id: "call",       label: "Call",        icon: Camera },
+  { id: "call",       label: "Call",         icon: Camera },
   { id: "compose",    label: "Compose",     icon: MessageSquare },
   { id: "settings",   label: "Settings",    icon: SettingsIcon },
 ];
@@ -20,7 +21,7 @@ const tabIds = new Set(tabs.map((tab) => tab.id));
 function getSavedTab() {
   try {
     const saved = localStorage.getItem("voiceforge:activeTab");
-    return tabIds.has(saved) ? saved: DEFAULT_TAB;
+    return tabIds.has(saved) ? saved : DEFAULT_TAB;
   } catch {
     return DEFAULT_TAB;
   }
@@ -45,18 +46,28 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen bg-cloud text-ink dark:bg-night dark:text-neutral-100">
+    <div className="min-h-screen flex flex-col bg-cloud text-ink dark:bg-night dark:text-neutral-100">
+      
+      {/* Global Header */}
       <header className="border-b border-ink/10 bg-white dark:border-border dark:bg-surface">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-moss dark:text-glow">
-              Open source assistive video
-            </p>
-            <h1 className="mt-1 text-3xl font-bold tracking-normal text-ink dark:text-neutral-50">
-              VoiceForge
-            </h1>
-          </div>
+          <div className="flex items-center gap-4">
+            <img
+              src="/models/logo5.png"
+              alt="VoiceForge Logo"
+              className="h-14 w-14 object-contain"
+            />
 
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-moss dark:text-glow">
+               Open source assistive video
+              </p>
+
+              <h1 className="mt-1 text-3xl font-bold tracking-normal text-ink dark:text-neutral-50">
+               VoiceForge
+              </h1>
+            </div>
+         </div>
           <div className="flex flex-wrap items-center gap-2">
             <nav className="flex flex-wrap gap-2" aria-label="VoiceForge pages">
               {tabs.map((tab) => {
@@ -80,7 +91,7 @@ export default function App() {
               })}
             </nav>
 
-            {/* ── Dark / Light mode toggle ──────────────────────────────── */}
+            {/* Dark / Light mode toggle */}
             <button
               type="button"
               onClick={toggleTheme}
@@ -95,16 +106,22 @@ export default function App() {
         </div>
       </header>
 
-      {/* VoiceForge composer is full-bleed (no max-width wrapper) */}
-      {activeTab === "compose" && <VoiceForge />}
+      {/* Main Content Area */}
+      <main className="flex-grow">
+        {activeTab === "compose" && <VoiceForge />}
 
-      {activeTab !== "compose" && (
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          {activeTab === "onboarding" && <Onboarding onReady={() => selectTab("call")} />}
-          {activeTab === "call"       && <Call />}
-          {activeTab === "settings"   && <Settings />}
-        </div>
-      )}
-    </main>
+        {activeTab !== "compose" && (
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            {activeTab === "onboarding" && <Onboarding onReady={() => selectTab("call")} />}
+            {activeTab === "call"       && <Call />}
+            {activeTab === "settings"   && <Settings />}
+          </div>
+        )}
+      </main>
+
+      
+      <Footer />
+    </div>
   );
 }
+
