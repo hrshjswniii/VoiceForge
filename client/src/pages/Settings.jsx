@@ -223,6 +223,45 @@ export default function Settings() {
             />
             <p className="text-xs text-ink/50 mt-1">Higher values exaggerate the style of the reference audio.</p>
           </div>
+
+          {/* ── Speaker Boost toggle ── */}
+          <div className="flex items-center justify-between rounded-lg border border-ink/10 p-4 dark:border-border">
+            <div>
+              <p className="text-sm font-bold text-ink dark:text-neutral-200">
+                Speaker Boost
+              </p>
+              <p className="mt-0.5 text-xs text-ink/55 dark:text-muted">
+                Boosts similarity to the reference speaker. Disable if you hear metallic artefacts.
+              </p>
+            </div>
+            <button
+              id="settings-speaker-boost"
+              type="button"
+              role="switch"
+              aria-checked={voiceSettings.use_speaker_boost}
+              onClick={() =>
+                saveVoiceSettings({
+                  ...voiceSettings,
+                  use_speaker_boost: !voiceSettings.use_speaker_boost,
+                })
+              }
+              className={[
+                "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent",
+                "transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-moss focus:ring-offset-2 dark:focus:ring-glow dark:focus:ring-offset-black",
+                voiceSettings.use_speaker_boost
+                  ? "bg-moss dark:bg-glow"
+                  : "bg-neutral-300 dark:bg-neutral-600",
+              ].join(" ")}
+              aria-label="Toggle Speaker Boost"
+            >
+              <span
+                className={[
+                  "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200",
+                  voiceSettings.use_speaker_boost ? "translate-x-5" : "translate-x-0",
+                ].join(" ")}
+              />
+            </button>
+          </div>
         </div>
       </section>
 
