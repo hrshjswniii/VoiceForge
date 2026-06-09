@@ -7,7 +7,7 @@ import {
   deleteVoiceProfile,
   getSavedProfiles,
 } from "../hooks/useVoiceClone.js";
-
+import { useToast, ToastContainer } from "../components/useToast.jsx";
 
 function AudioPlayback({ blob }) {
   const [audioUrl, setAudioUrl] = React.useState(null);
@@ -33,6 +33,7 @@ export default function Settings() {
   const [profiles, setProfiles] = React.useState([]);
   const [dbError, setDbError] = React.useState("");
   const [migratedNotice, setMigratedNotice] = React.useState(false);
+  const { toasts, showToast } = useToast();
   const [apiKey, setApiKeyInput] = React.useState(() => {
     try {
       return getApiKey();
@@ -74,6 +75,7 @@ export default function Settings() {
 
   function saveApiKey() {
     setApiKey(apiKey);
+    showToast("API key saved for this session");
   }
 
 
@@ -145,7 +147,7 @@ export default function Settings() {
 
               onChange={(event) => setApiKeyInput(event.target.value)}
               className="mt-2 min-h-11 w-full rounded-md border border-ink/15 bg-cloud px-3 text-ink outline-none focus:border-moss focus:ring-4 focus:ring-mint dark:border-border dark:bg-black dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-glow dark:focus:ring-glow/25"
-
+              onKeyDown={(e) => { if (e.key === "Enter") saveApiKey(); }}
 
               placeholder="sk_..."
             />
@@ -264,6 +266,7 @@ export default function Settings() {
           ))}
         </div>
       </section>
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }
