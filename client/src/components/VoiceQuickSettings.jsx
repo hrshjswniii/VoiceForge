@@ -10,16 +10,38 @@ const DEFAULT_SETTINGS = {
 };
 
 /**
- * Reads voice settings from localStorage.
- * Falls back to defaults if the key is missing or JSON is malformed.
+ * Reads voice settings from localStorage, sanitizing each value against its
+ * default type so callers never receive wrong types (e.g. string reaching
+ * a slider's value prop or parseFloat producing NaN on initial render).
  */
 function loadSettings() {
+  let parsed = {};
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+    if (raw) parsed = JSON.parse(raw);
   } catch {
-    return DEFAULT_SETTINGS;
+    // Malformed JSON — fall back to defaults for all keys.
   }
+
+  const result = {};
+  for (const [key, defaultVal] of Object.entries(DEFAULT_SETTINGS)) {
+    if (typeof defaultVal === "number") {
+      const coerced = parsed[key] == null ? NaN : Number(parsed[key]);
+      if (Number.isNaN(coerced)) {
+        result[key] = defaultVal;
+      } else if (defaultVal >= 0 && defaultVal <= 1) {
+        // Slider range: clamp to [0, 1].
+        result[key] = Math.min(1, Math.max(0, coerced));
+      } else {
+        result[key] = coerced;
+      }
+    } else if (typeof defaultVal === "boolean") {
+      result[key] = typeof parsed[key] === "boolean" ? parsed[key] : defaultVal;
+    } else {
+      result[key] = typeof parsed[key] === typeof defaultVal ? parsed[key] : defaultVal;
+    }
+  }
+  return result;
 }
 
 /**

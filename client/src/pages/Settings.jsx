@@ -65,11 +65,23 @@ export default function Settings() {
 
   const defaultSettings = { stability: 0.45, similarity_boost: 0.8, style: 0.2 };
   const [voiceSettings, setVoiceSettings] = React.useState(() => {
+    let parsed = {};
     try {
-      return JSON.parse(localStorage.getItem("voiceforge:voiceSettings")) || defaultSettings;
+      const raw = localStorage.getItem("voiceforge:voiceSettings");
+      if (raw) parsed = JSON.parse(raw);
     } catch {
-      return defaultSettings;
+      // Malformed JSON — fall back to defaults for all keys.
     }
+    // Sanitize each field against its default type so slider value props
+    // never receive strings, null, or out-of-range numbers.
+    const result = {};
+    for (const [key, defaultVal] of Object.entries(defaultSettings)) {
+      const coerced = parsed[key] == null ? NaN : Number(parsed[key]);
+      result[key] = Number.isNaN(coerced)
+        ? defaultVal
+        : Math.min(1, Math.max(0, coerced));
+    }
+    return result;
   });
 
   function saveApiKey() {

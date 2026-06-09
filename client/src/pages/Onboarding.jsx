@@ -19,14 +19,40 @@ const DEFAULT_VOICE_SETTINGS = {
 };
 
 function loadVoiceSettings() {
+  let parsed = {};
   try {
     const raw = localStorage.getItem(VOICE_SETTINGS_KEY);
-    return raw
-      ? { ...DEFAULT_VOICE_SETTINGS, ...JSON.parse(raw) }
-      : { ...DEFAULT_VOICE_SETTINGS };
+    if (raw) parsed = JSON.parse(raw);
   } catch {
-    return { ...DEFAULT_VOICE_SETTINGS };
+    // Malformed JSON — fall back to defaults for all keys.
   }
+
+  // Build a sanitized result by validating each key against its default type.
+  // This prevents corrupted storage values from reaching VoiceSlider.value.toFixed()
+  // or the Speaker Boost toggle as wrong types.
+  const result = {};
+  for (const [key, defaultVal] of Object.entries(DEFAULT_VOICE_SETTINGS)) {
+    if (typeof defaultVal === "number") {
+      const coerced = parsed[key] == null ? NaN : Number(parsed[key]);
+      if (Number.isNaN(coerced)) {
+        // Missing or non-numeric — use default.
+        result[key] = defaultVal;
+      } else if (defaultVal >= 0 && defaultVal <= 1) {
+        // Slider range: clamp to [0, 1].
+        result[key] = Math.min(1, Math.max(0, coerced));
+      } else {
+        // Non-slider numeric: accept coerced value as-is.
+        result[key] = coerced;
+      }
+    } else if (typeof defaultVal === "boolean") {
+      // Accept only actual booleans; anything else falls back to default.
+      result[key] = typeof parsed[key] === "boolean" ? parsed[key] : defaultVal;
+    } else {
+      // For any future non-numeric, non-boolean key, copy only on type match.
+      result[key] = typeof parsed[key] === typeof defaultVal ? parsed[key] : defaultVal;
+    }
+  }
+  return result;
 }
 
 function persistVoiceSettings(settings) {
