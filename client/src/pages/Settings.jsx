@@ -8,6 +8,7 @@ import {
 } from "../utils/voiceSettings.js";
 
 import { ExternalLink, Trash2, CircleAlert } from "lucide-react";
+import { useToast, ToastContainer } from "../components/useToast.jsx";
 import {
   deleteVoiceProfile,
   getSavedProfiles,
@@ -37,6 +38,7 @@ function AudioPlayback({ blob }) {
 export default function Settings() {
   const [profiles, setProfiles] = React.useState([]);
   const [dbError, setDbError] = React.useState("");
+  const { toasts, showToast } = useToast();
   const [migratedNotice, setMigratedNotice] = React.useState(false);
   const [apiKey, setApiKeyInput] = React.useState(() => {
     try {
@@ -73,6 +75,7 @@ export default function Settings() {
 
   function saveApiKey() {
     setApiKey(apiKey);
+    showToast("API key saved", "success");
   }
 
 
@@ -87,8 +90,10 @@ export default function Settings() {
       const next = await deleteVoiceProfile(voiceId);
       setProfiles(next);
       setDbError("");
+      showToast("Voice profile deleted", "success");
     } catch (err) {
       setDbError(err?.message || String(err));
+      showToast("Failed to delete profile", "error");
     }
   }
 
@@ -302,6 +307,7 @@ export default function Settings() {
           ))}
         </div>
       </section>
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }

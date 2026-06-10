@@ -4,6 +4,7 @@ import { CheckCircle2, Loader2, CircleAlert, ArrowRight, RotateCcw } from "lucid
 import VoiceRecorder from "../components/VoiceRecorder.jsx";
 import useVoiceClone from "../hooks/useVoiceClone.js";
 import { hasApiKey } from "../utils/apiKeyStorage.js";
+import { useToast, ToastContainer } from "../components/useToast.jsx";
 
 import {
   DEFAULT_VOICE_SETTINGS,
@@ -240,6 +241,7 @@ export default function Onboarding({ onReady }) {
   const [voiceName, setVoiceName] = React.useState("VoiceForge Voice");
   const [successProfile, setSuccessProfile] = React.useState(null);
   const { cloneVoice, status, error: apiError } = useVoiceClone();
+  const { toasts, showToast } = useToast();
   const isCloning = status === "cloning";
   const [serverStatus, setServerStatus] = React.useState({ isMock: false, hasServerKey: false });
 
@@ -321,10 +323,12 @@ export default function Onboarding({ onReady }) {
       if (profile) {
         setSuccessProfile(profile);
         setMaxUnlockedStep(2);
+        showToast("Voice cloned successfully", "success");
         setActiveStep(2); // Move user to Step 2 instantly upon real success
       }
     } catch (err) {
       console.error("Voice cloning process failed:", err);
+      showToast("Voice cloning failed. Please try again.", "error");
       // No artificial mock bypasses here. Real failure is preserved in apiError and shown below.
     }
   }
@@ -533,6 +537,7 @@ export default function Onboarding({ onReady }) {
           </div>
         </section>
       )}
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }
