@@ -20,13 +20,14 @@ export function QuickReplies({ onSelect }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved === null) return DEFAULT_QUICK_REPLIES;
       const parsed = JSON.parse(saved);
-      if (
-        Array.isArray(parsed) &&
-        parsed.every((item) => item && typeof item.phrase === "string" && typeof item.label === "string")
-      ) {
-        return parsed;
-      }
-      return DEFAULT_QUICK_REPLIES;
+      return Array.isArray(parsed) && parsed.every(
+        (item) =>
+          item &&
+          typeof item.label === "string" &&
+          typeof item.phrase === "string"
+      )
+        ? parsed
+        : DEFAULT_QUICK_REPLIES;
     } catch {
       return DEFAULT_QUICK_REPLIES;
     }
@@ -49,6 +50,11 @@ export function QuickReplies({ onSelect }) {
   const handleAdd = (e) => {
     e.preventDefault();
     const cleanPhrase = newPhrase.trim();
+
+    if (cleanPhrase.length > 120) {
+      showToast("Phrase is too long (max 120 characters)", "error");
+      return;
+    }
 
     if (!cleanPhrase) {
       showToast("Phrase cannot be empty", "error");
@@ -165,6 +171,7 @@ export function QuickReplies({ onSelect }) {
               type="text"
               value={newPhrase}
               onChange={(e) => setNewPhrase(e.target.value)}
+              maxLength={120}
               placeholder="New reply..."
               autoFocus
               className="flex-1 min-w-[5rem] max-w-[10rem] bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none dark:text-neutral-100 dark:placeholder:text-neutral-500"

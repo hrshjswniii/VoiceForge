@@ -4,6 +4,7 @@ import { CheckCircle2, Loader2, CircleAlert, ArrowRight, RotateCcw } from "lucid
 import VoiceRecorder from "../components/VoiceRecorder.jsx";
 import useVoiceClone from "../hooks/useVoiceClone.js";
 import { hasApiKey } from "../utils/apiKeyStorage.js";
+import { useToast, ToastContainer } from "../components/useToast.jsx";
 
 import {
   DEFAULT_VOICE_SETTINGS,
@@ -240,6 +241,7 @@ export default function Onboarding({ onReady }) {
   const [voiceName, setVoiceName] = React.useState("VoiceForge Voice");
   const [successProfile, setSuccessProfile] = React.useState(null);
   const { cloneVoice, status, error: apiError } = useVoiceClone();
+  const { toasts, showToast } = useToast();
   const isCloning = status === "cloning";
   const [serverStatus, setServerStatus] = React.useState({ isMock: false, hasServerKey: false });
 
@@ -253,6 +255,15 @@ export default function Onboarding({ onReady }) {
   const hasKey = React.useMemo(() => {
     return hasApiKey() || serverStatus.isMock || serverStatus.hasServerKey;
   }, [serverStatus]);
+
+  // Derived validation: compute an error message from the current voiceName.
+  // Using a constant (not useState) because the value is always in sync with voiceName.
+  const nameError = React.useMemo(() => {
+    const trimmed = voiceName.trim();
+    if (trimmed.length === 0) return "Voice name is required.";
+    if (trimmed.length > 100) return "Voice name must be 100 characters or fewer.";
+    return "";
+  }, [voiceName]);
 
 
   // Track the highest milestone step the user is allowed to navigate to
@@ -302,19 +313,22 @@ export default function Onboarding({ onReady }) {
   }, [maxUnlockedStep]);
 
   async function handleClone() {
-    // 1. Strict validation guards: Don't run without API key or a recorded sample
+    // 1. Strict validation guards: Don't run without API key, a recording, or a valid name
     if (!hasKey || !recording) return;
-    
+    if (nameError) return; // block on empty / whitespace / over-limit name
+
     try {
       // 2. Perform real API call without overlapping mock declarations
-      const profile = await cloneVoice(recording, voiceName);
+      const profile = await cloneVoice(recording, voiceName.trim());
       if (profile) {
         setSuccessProfile(profile);
         setMaxUnlockedStep(2);
+        showToast("Voice cloned successfully", "success");
         setActiveStep(2); // Move user to Step 2 instantly upon real success
       }
     } catch (err) {
       console.error("Voice cloning process failed:", err);
+      showToast("Voice cloning failed. Please try again.", "error");
       // No artificial mock bypasses here. Real failure is preserved in apiError and shown below.
     }
   }
@@ -419,17 +433,54 @@ export default function Onboarding({ onReady }) {
                 value={voiceName}
                 onChange={(event) => setVoiceName(event.target.value)}
                 disabled={isCloning}
-                className="min-h-11 flex-1 rounded-md border border-ink/15 bg-cloud px-3 text-ink outline-none focus:border-moss focus:ring-4 focus:ring-mint dark:border-border dark:bg-black dark:text-neutral-100"
+                maxLength={100}
+                aria-describedby="voice-name-feedback"
+                aria-invalid={nameError ? "true" : undefined}
+                className={[
+                  "min-h-11 flex-1 rounded-md border px-3 text-ink outline-none transition",
+                  "focus:ring-4 focus:ring-mint dark:bg-black dark:text-neutral-100",
+                  nameError
+                    ? "border-coral focus:border-coral dark:border-coral/70"
+                    : "border-ink/15 focus:border-moss dark:border-border",
+                  "bg-cloud dark:bg-black",
+                ].join(" ")}
               />
               <button
                 type="button"
                 onClick={handleClone}
-                disabled={isCloning || !hasKey || !recording}
+                disabled={isCloning || !hasKey || !recording || Boolean(nameError)}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-coral px-5 font-bold text-white transition hover:bg-coral/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCloning && <Loader2 className="animate-spin" size={18} />}
                 Clone voice
               </button>
+            </div>
+
+            {/* Name validation feedback + character counter */}
+            <div
+              id="voice-name-feedback"
+              className="mt-1.5 flex items-center justify-between gap-2 text-xs"
+            >
+              {nameError ? (
+                <p className="flex items-center gap-1 font-semibold text-coral" role="alert">
+                  <CircleAlert size={13} aria-hidden="true" />
+                  {nameError}
+                </p>
+              ) : (
+                <span />
+              )}
+              <span
+                className={[
+                  "tabular-nums",
+                  voiceName.length >= 90
+                    ? "font-semibold text-coral"
+                    : "text-ink/45 dark:text-muted",
+                ].join(" ")}
+                aria-live="polite"
+                aria-label={`${voiceName.length} of 100 characters used`}
+              >
+                {voiceName.length}/100
+              </span>
             </div>
 
             {/* Render actual API errors transparently instead of swallowing failures */}
@@ -486,6 +537,7 @@ export default function Onboarding({ onReady }) {
           </div>
         </section>
       )}
+      <ToastContainer toasts={toasts} />
     </div>
   );
 }
