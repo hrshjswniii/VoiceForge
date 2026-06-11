@@ -90,15 +90,10 @@ export default function VoiceForge() {
       .writeText(target)
       .then(() => showToast("Copied to clipboard", "success"))
       .catch(() => {
-        const ta = document.createElement("textarea");
-        ta.value = target;
-        ta.style.position = "absolute";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        showToast("Copied", "success");
+        // execCommand('copy') is deprecated and removed in some secure contexts
+        // (e.g. iframes, extensions). Rather than silently failing or leaking a
+        // temporary <textarea> into the DOM, we surface a clear, actionable error.
+        showToast("Copy failed — please select the text and copy manually", "error");
       });
   }, [inputText, showToast]);
 
