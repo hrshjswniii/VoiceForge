@@ -1,6 +1,6 @@
 // Coordinates top-level navigation, saved voice state, and page rendering for VoiceForge.
 import React from "react";
-import { Camera, Mic2, Settings as SettingsIcon, MessageSquare, Sun, Moon, Menu, X, Users } from "lucide-react";
+import { Camera, Mic2, Settings as SettingsIcon, MessageSquare, Sun, Moon, Menu, X, Users, Info } from "lucide-react";
 import Onboarding from "./pages/Onboarding.jsx";
 import Call from "./pages/Call.jsx";
 import Settings from "./pages/Settings.jsx";
@@ -10,6 +10,7 @@ import Footer from './components/Footer.jsx';
 import KeyboardShortcutsModal from "./components/KeyboardShortcutsModal.jsx";
 import ScrollToBottomButton from "./components/ScrollToBottomButton.jsx";
 import Contributors from "./pages/Contributors.jsx";
+import About from "./pages/About";
 
 const tabs = [
   { id: "onboarding",   label: "Onboarding",   icon: Mic2 },
@@ -17,6 +18,7 @@ const tabs = [
   { id: "compose",      label: "Compose",       icon: MessageSquare },
   { id: "settings",     label: "Settings",      icon: SettingsIcon },
   { id: "contributors", label: "Contributors",  icon: Users },
+  { id: "about", label: "About", icon: Info },
 ];
 
 const DEFAULT_TAB = "onboarding";
@@ -216,6 +218,7 @@ export default function App() {
             {activeTab === "call"       && <Call />}
             {activeTab === "settings"   && <Settings />}
             {activeTab === "contributors" && <Contributors />}
+            {activeTab === "about" && <About onNavigate={selectTab} />}
           </div>
         )}
       </main>
