@@ -6,6 +6,7 @@ export default function VoiceRecorder({ onRecordingReady, disabled = false }) {
   const [isRecording, setIsRecording] = React.useState(false);
   const [audioUrl, setAudioUrl] = React.useState("");
   const [duration, setDuration] = React.useState(0);
+  const durationRef = React.useRef(0);
   const [recorderError, setRecorderError] = React.useState("");
   const recorderRef = React.useRef(null);
   const chunksRef = React.useRef([]);
@@ -19,6 +20,7 @@ export default function VoiceRecorder({ onRecordingReady, disabled = false }) {
   async function startRecording() {
     setRecorderError("");
     setDuration(0);
+    durationRef.current = 0;
     setAudioUrl((previous) => {
       if (previous) URL.revokeObjectURL(previous);
       return "";
@@ -55,14 +57,18 @@ export default function VoiceRecorder({ onRecordingReady, disabled = false }) {
           if (previous) URL.revokeObjectURL(previous);
           return url;
         });
-        onRecordingReady(blob, duration);
+        onRecordingReady(blob, durationRef.current);
         streamRef.current?.getTracks().forEach((track) => track.stop());
       };
 
       recorder.start();
       setIsRecording(true);
       timerRef.current = window.setInterval(() => {
-        setDuration((prev) => prev + 1);
+        setDuration((prev) => {
+          const next = prev + 1;
+          durationRef.current = next;
+          return next;
+        });
       }, 1000);
     } catch (err) {
       window.clearInterval(timerRef.current);
