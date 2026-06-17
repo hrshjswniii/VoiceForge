@@ -104,7 +104,6 @@ export default function VoiceForge() {
   }, [inputText, showToast]);
 
   const handleQuickReply = useCallback((phrase) => {
-    setInputText(phrase);
     speak(phrase);
     addMessage(phrase);
     showToast("Quick reply sent", "success");

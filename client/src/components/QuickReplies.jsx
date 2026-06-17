@@ -4,14 +4,16 @@ import { useToast, ToastContainer } from "./useToast.jsx";
 
 const CATEGORIES = ["General", "Social", "Needs", "Urgent"];
 
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
 const DEFAULT_QUICK_REPLIES = [
-  { label: "Hello", phrase: "Hello", category: "Social" },
-  { label: "Thank you", phrase: "Thank you", category: "Social" },
-  { label: "Please wait", phrase: "Please wait", category: "Urgent" },
-  { label: "I need help", phrase: "I need help", category: "Urgent" },
-  { label: "Can you repeat that?", phrase: "Can you repeat that?", category: "Needs" },
-  { label: "Yes, I understand", phrase: "Yes, I understand", category: "Social" },
-  { label: "No, thank you", phrase: "No, thank you", category: "Needs" },
+  { id: generateId(), label: "Hello", phrase: "Hello", category: "Social" },
+  { id: generateId(), label: "Thank you", phrase: "Thank you", category: "Social" },
+  { id: generateId(), label: "Please wait", phrase: "Please wait", category: "Urgent" },
+  { id: generateId(), label: "I need help", phrase: "I need help", category: "Urgent" },
+  { id: generateId(), label: "Can you repeat that?", phrase: "Can you repeat that?", category: "Needs" },
+  { id: generateId(), label: "Yes, I understand", phrase: "Yes, I understand", category: "Social" },
+  { id: generateId(), label: "No, thank you", phrase: "No, thank you", category: "Needs" },
 ];
 
 const STORAGE_KEY = "vf_quick_replies";
@@ -28,6 +30,7 @@ export function QuickReplies({ onSelect }) {
       ) {
         return parsed.map((item) => ({
           ...item,
+          id: item.id || generateId(),
           category: item.category && CATEGORIES.includes(item.category) ? item.category : "General",
         }));
       }
@@ -39,6 +42,7 @@ export function QuickReplies({ onSelect }) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState(null);
   const [editingReplyData, setEditingReplyData] = useState(null);
   const [newPhrase, setNewPhrase] = useState("");
   const [selectedCategoryTab, setSelectedCategoryTab] = useState("All");
@@ -77,7 +81,7 @@ export function QuickReplies({ onSelect }) {
       return;
     }
 
-    const newReply = { label: cleanPhrase, phrase: cleanPhrase, category: newCategory };
+    const newReply = { id: generateId(), label: cleanPhrase, phrase: cleanPhrase, category: newCategory };
     setReplies((prev) => [...prev, newReply]);
     setNewPhrase("");
     setNewCategory("General");
@@ -85,14 +89,20 @@ export function QuickReplies({ onSelect }) {
     showToast("Quick reply added", "success");
   };
 
-  const handleDelete = (phraseToDelete) => {
-    setReplies((prev) => prev.filter((r) => r.phrase !== phraseToDelete));
+  const handleDelete = (idToDelete) => {
+    setReplies((prev) => prev.filter((r) => r.id !== idToDelete));
     showToast("Quick reply deleted", "success");
+  };
+
+  const handleEditStart = (id, reply) => {
+    setIsAdding(false);
+    setEditingReplyId(id);
+    setEditingReplyData({ phrase: reply.phrase, category: reply.category || "General" });
   };
 
   const handleEditSave = (e) => {
     e.preventDefault();
-    if (!editingReplyData) return;
+    if (!editingReplyId || !editingReplyData) return;
 
     const cleanPhrase = editingReplyData.phrase.trim();
     if (cleanPhrase.length > 120) {
@@ -105,7 +115,7 @@ export function QuickReplies({ onSelect }) {
     }
 
     const isDuplicate = replies.some(
-      (r) => r.phrase.toLowerCase() === cleanPhrase.toLowerCase() && r.phrase !== editingReplyData.originalPhrase
+      (r) => r.id !== editingReplyId && r.phrase.toLowerCase() === cleanPhrase.toLowerCase()
     );
 
     if (isDuplicate) {
@@ -114,12 +124,13 @@ export function QuickReplies({ onSelect }) {
     }
 
     setReplies((prev) => prev.map(r => {
-      if (r.phrase === editingReplyData.originalPhrase) {
+      if (r.id === editingReplyId) {
         return { ...r, label: cleanPhrase, phrase: cleanPhrase, category: editingReplyData.category };
       }
       return r;
     }));
-    
+
+    setEditingReplyId(null);
     setEditingReplyData(null);
     showToast("Quick reply updated", "success");
   };
@@ -156,6 +167,7 @@ export function QuickReplies({ onSelect }) {
             onClick={() => {
               setIsEditing(!isEditing);
               setIsAdding(false);
+              setEditingReplyId(null);
               setEditingReplyData(null);
               setNewPhrase("");
             }}
@@ -192,12 +204,14 @@ export function QuickReplies({ onSelect }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Quick reply phrases">
-        {filteredReplies.map(({ label, phrase, category }) => {
+        {filteredReplies.map(({ id, label, phrase, category }) => {
+          const isCurrentlyEditing = editingReplyId === id;
+
           if (isEditing) {
-            if (editingReplyData && editingReplyData.originalPhrase === phrase) {
+            if (isCurrentlyEditing) {
               return (
                 <form
-                  key={`edit-${phrase}`}
+                  key={`edit-${id}`}
                   onSubmit={handleEditSave}
                   className="flex items-center gap-1.5 rounded-full border border-blue-400 bg-white pl-3 pr-2 py-1 dark:border-blue-500 dark:bg-neutral-900"
                 >
@@ -230,7 +244,10 @@ export function QuickReplies({ onSelect }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setEditingReplyData(null)}
+                    onClick={() => {
+                      setEditingReplyId(null);
+                      setEditingReplyData(null);
+                    }}
                     aria-label="Cancel"
                     className="flex h-5 w-5 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 transition-colors"
                   >
@@ -242,7 +259,7 @@ export function QuickReplies({ onSelect }) {
 
             return (
               <div
-                key={phrase}
+                key={`view-${id}`}
                 className={[
                   "flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 pl-3 pr-2 py-1.5",
                   "text-sm text-neutral-700 dark:border-border dark:bg-surface dark:text-neutral-300",
@@ -250,14 +267,14 @@ export function QuickReplies({ onSelect }) {
               >
                 <span className="truncate max-w-[150px]">{label}</span>
                 <button
-                  onClick={() => setEditingReplyData({ originalPhrase: phrase, phrase, category: category || "General" })}
+                  onClick={() => handleEditStart(id, { phrase, category })}
                   aria-label={`Edit quick reply: ${phrase}`}
                   className="flex h-5 w-5 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-200 hover:text-blue-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-blue-400 transition-colors"
                 >
                   <Pencil size={12} aria-hidden="true" />
                 </button>
                 <button
-                  onClick={() => handleDelete(phrase)}
+                  onClick={() => handleDelete(id)}
                   aria-label={`Delete quick reply: ${phrase}`}
                   className="flex h-5 w-5 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-200 hover:text-red-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-red-400 transition-colors"
                 >
@@ -269,7 +286,7 @@ export function QuickReplies({ onSelect }) {
 
           return (
             <button
-              key={phrase}
+              key={id}
               onClick={() => onSelect(phrase)}
               className={[
                 "rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5",
