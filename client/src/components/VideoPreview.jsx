@@ -36,14 +36,22 @@ export default React.forwardRef(function VideoPreview({
   }, [isCalibrating]);
 
   useEffect(() => {
-  return () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      onSpeakingChange?.(false);
+    };
+  }, [onSpeakingChange]);
+
+  // Initialize AudioProcessor when audio element is ready
+  useEffect(() => {
+    if (audioUrl && audioRef.current && audioProcessorRef.current && !audioRef.current.dataset.audioProcessorInitialized) {
+      audioProcessorRef.current.initialize(audioRef.current);
+      audioRef.current.dataset.audioProcessorInitialized = "true";
     }
-    onSpeakingChange?.(false);
-  };
-}, [onSpeakingChange]);
+  }, [audioUrl]);
 
   React.useEffect(() => {
     async function loadModel() {
@@ -222,9 +230,6 @@ export default React.forwardRef(function VideoPreview({
           autoPlay
           onPlay={() => {
             onSpeakingChange?.(true);
-            if (audioProcessorRef.current && audioRef.current) {
-              audioProcessorRef.current.initialize(audioRef.current);
-            }
           }}
           onPause={() => onSpeakingChange?.(false)}
           onEnded={() => onSpeakingChange?.(false)}
