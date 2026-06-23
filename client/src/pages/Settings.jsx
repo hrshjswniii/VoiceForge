@@ -161,8 +161,12 @@ export default function Settings() {
         let audioBlob = null;
         if (p.audioDataUrl) {
           try {
-            const res = await fetch(p.audioDataUrl);
-            audioBlob = await res.blob();
+            if (typeof p.audioDataUrl === "string" && p.audioDataUrl.startsWith("data:audio/")) {
+              const res = await fetch(p.audioDataUrl);
+              audioBlob = await res.blob();
+            } else {
+              console.warn("Skipped invalid or non-audio DataURL in voice profile backup:", p.name);
+            }
           } catch (e) {
             console.error("Failed to parse audio DataURL:", e);
           }
