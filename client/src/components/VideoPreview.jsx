@@ -24,6 +24,7 @@ export default React.forwardRef(function VideoPreview({
   const isInferringRef = useRef(false);
   const lastMouthCanvasRef = useRef(null);
   const lastMouthCoordsRef = useRef(null);
+  const waveRef = useRef(null);
 
   if (!tempCanvasRef.current && typeof document !== "undefined") {
     tempCanvasRef.current = document.createElement("canvas");
@@ -252,6 +253,16 @@ export default React.forwardRef(function VideoPreview({
         }
       }
 
+      if (waveRef.current && audioProcessorRef.current) {
+        const frequencies = audioProcessorRef.current.getFrequencyData();
+        const spans = waveRef.current.querySelectorAll("span");
+        spans.forEach((span, index) => {
+          const freq = frequencies[index] || 0;
+          const height = 4 + (freq / 255.0) * 16;
+          span.style.height = `${height}px`;
+        });
+      }
+
       animationRef.current = requestAnimationFrame(draw);
     }
 
@@ -270,15 +281,16 @@ export default React.forwardRef(function VideoPreview({
         </div>
         {isSpeaking && (
           <div
+            ref={waveRef}
             className="recording-wave flex h-5 items-center gap-0.5"
             role="status"
             aria-label="Avatar speech active"
           >
-            {[14, 20, 16, 18, 12].map((height, index) => (
+            {[0, 0, 0, 0, 0].map((_, index) => (
               <span
                 key={index}
                 className="block w-[3px] bg-coral rounded-full"
-                style={{ height: `${height}px` }}
+                style={{ height: "4px" }}
               />
             ))}
           </div>
